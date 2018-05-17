@@ -4,7 +4,7 @@ import matplotlib.image as mpimg
 import numpy as np
 import cv2
 import math as m
-import random as r
+import random as rn
 import json
 
 
@@ -80,7 +80,7 @@ def value(x,y,img):
     return np.dot(v, f)
 
 if __name__ == "__main__":
-    box_img='/home/bvr/data/grapheks/box_thresh/dda031-lvl2-li-bl-lg.png'
+    box_img='/home/bvr/data/grapheks/box_thresh/ada290-lvl1-li-bl-lg_1.png'
     img=mpimg.imread(box_img)
     y_max,x_max= img.shape
     angl=[]
@@ -91,19 +91,26 @@ if __name__ == "__main__":
         angl.append(theta)
     for j in range(1):
         origins=[]
-        x_rand= r.randint(1,x_max-1)
-        y_rand= r.randint(1,y_max-1)
+        x_rand= rn.randint(1,x_max-1)
+        y_rand= rn.randint(1,y_max-1)
         origins.extend((y_rand,x_rand))
-        th,p0,r= bnd(x_rand,y_rand,img,angl)
-        p= [(y, x) for y, x in p0 if x is not np.inf and y is not np.inf]
-        l=len(p)
-        p=np.array(p)
-        jj,ii=np.nonzeo(np.where(p!=m.inf))
-        
-        result={'origin':'origin','theta':'th','r':'r','p':'p','num_points':'l'}
+        th,li,r= bnd(x_rand,y_rand,img,angl)
+        p1= [(y, x) for y, x in li if x is not m.inf and y is not m.inf]
+        with open('all_values.json', 'w') as outfile:
+            json.dump(li, outfile)
+        src = li
+        p=np.array(src)
+        th_0=[]
+        r_0=[]
+        l=len(p1)     
+        ii=np.nonzero(np.all(p!=np.inf,axis=1))
+        for i in ii[0]:
+            th_0.append(th[i])
+            r_0.append(r[i])
+        result={'origin':origins,'theta':th_0,'r':r_0,'p':p1,'num_points':l}
         res.append(result)
-    with open('test.json', 'w') as outfile:
-        json.dump(res, outfile)
-    
+    with open('filtered.json', 'w') as outfile:
+             json.dump(res, outfile)
 
-        
+
+
