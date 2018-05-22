@@ -10,7 +10,7 @@ import json
 
 
 
-def bnd(x_rand,y_rand,img,angl):
+def bnd(x_rand,y_rand,img,angl,point_det_thr):
     y_max,x_max= img.shape
     j=0
     theta=[]
@@ -19,7 +19,7 @@ def bnd(x_rand,y_rand,img,angl):
 
     for i in angl:
         j+=1
-        x, y, r=fnd(i,x_rand,y_rand,img)
+        x, y, r=fnd(i,x_rand,y_rand,img,point_det_thr)
         l=(y, x)
         theta.append(i)
         limit.append(l)
@@ -29,7 +29,7 @@ def bnd(x_rand,y_rand,img,angl):
 
 
 
-def fnd(theta,or_x,or_y,img):
+def fnd(theta,or_x,or_y,img,point_det_thr):
     r=1
     y_max,x_max= img.shape
     
@@ -44,7 +44,7 @@ def fnd(theta,or_x,or_y,img):
        
         v=value(p_x,p_y,img)
         r+=1
-        if(v>.9):
+        if(v>=point_det_thr):
             return p_x,p_y,r
 
 
@@ -79,38 +79,64 @@ def value(x,y,img):
     f /= np.sum(f)
     return np.dot(v, f)
 
-if __name__ == "__main__":
-    box_img='/home/bvr/data/grapheks/box_thresh/ada290-lvl1-li-bl-lg_1.png'
+def inter(k,origins=None, num_points_random=1,theta_range=2*m.pi, theta_offset=0,point_det_thr=1):
+    ''' ORIGINS is a list of points (x, y) and if ORIGINS is None, calculate a list of random points with list length = NUM_POINTS_RANDOM'''
+    box_img='/home/bvr/data/grapheks/box_thresh/sea051-lvl1-li-bl-lg.png'
     img=mpimg.imread(box_img)
     y_max,x_max= img.shape
     angl=[]
-    res=[]
-    k=1000
-    for i in range(k):
-        theta=(2 * m.pi)/k*i
+    #k=1000
+    if origins is None :
+        origins = [(rn.randrange(x_max), rn.randrange(y_max))
+                   for _ in range(num_points_random)]
+        
+    for i in range(1,k):
+        theta=((theta_range)/k)*i + theta_offset
+        #print(m.tan(theta))
         angl.append(theta)
-    for j in range(1):
-        origins=[]
-        x_rand= rn.randint(1,x_max-1)
-        y_rand= rn.randint(1,y_max-1)
-        origins.extend((y_rand,x_rand))
-        th,li,r= bnd(x_rand,y_rand,img,angl)
+        res=[]
+        
+    for x_rand, y_rand in origins:
+        #print(y_rand,x_rand)
+        th,li,r= bnd(x_rand,y_rand,img,angl,point_det_thr)
+        print(len(li))
         p1= [(y, x) for y, x in li if x is not m.inf and y is not m.inf]
         with open('all_values.json', 'w') as outfile:
             json.dump(li, outfile)
+            
+        if(len(p1)==0):
+            raise IndexError("try again")            
+            
+        print(len(p1))    
         src = li
         p=np.array(src)
         th_0=[]
         r_0=[]
         l=len(p1)     
         ii=np.nonzero(np.all(p!=np.inf,axis=1))
+        #print(ii[0])
         for i in ii[0]:
             th_0.append(th[i])
-            r_0.append(r[i])
-        result={'origin':origins,'theta':th_0,'r':r_0,'p':p1,'num_points':l}
+            r_0.append(r[i])   
+        result={'origin':(y_rand, x_rand),'theta':th_0,'r':r_0,'p':p1,'num_points':l}
         res.append(result)
     with open('filtered.json', 'w') as outfile:
              json.dump(res, outfile)
+    
+    
+    '''check'''
+    
+    b_im='/home/bvr/data/grapheks/box_thresh/sea051-lvl1-li-bl-lg.png'
+    img=cv2.imread(b_im)
+    img=cv2.circle(img,(x_rand,y_rand), 3, (255,0,0), 1)
+    #cv2.imwrite('/home/siddharth/code/pr1/testimage.png',o)
+    for yt,xt in p1:
+        yt, xt = int(round(yt)), int(round(xt))
+        orig_pnt=cv2.circle(img,(xt,yt), 1, (0,0,255), 1)
+        #cv2.imwrite('/home/siddharth/code/pr1/testimage.png',img) 
+        cv2.imwrite('/home/siddharth/code/pr1/testimage.png',orig_pnt)
+        
+
 
 
 
